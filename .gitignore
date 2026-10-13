@@ -1,0 +1,9 @@
+# Generated output (published via Pages artifact, no need to commit)
+public/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env

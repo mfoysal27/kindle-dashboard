@@ -1,0 +1,71 @@
+name: Build Kindle dashboard
+
+# Runs hourly, and lets you trigger it manually from the Actions tab.
+on:
+  schedule:
+    - cron: "0 * * * *"   # top of every hour (UTC)
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+# Permissions required to publish to GitHub Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one build/deploy at a time.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate dashboard image
+        env:
+          # Secrets - set these in Settings -> Secrets and variables -> Actions.
+          ICAL_URL: ${{ secrets.ICAL_URL }}
+          OWM_API_KEY: ${{ secrets.OWM_API_KEY }}
+          # Optional overrides (set as secrets OR plain repo variables).
+          OUTPUT_SLUG: ${{ secrets.OUTPUT_SLUG }}
+          TIMEZONE: ${{ vars.TIMEZONE }}
+          LOCATION_LABEL: ${{ vars.LOCATION_LABEL }}
+          UNITS: ${{ vars.UNITS }}
+          OWM_CITY: ${{ vars.OWM_CITY }}
+          OWM_LAT: ${{ vars.OWM_LAT }}
+          OWM_LON: ${{ vars.OWM_LON }}
+          MAX_EVENTS: ${{ vars.MAX_EVENTS }}
+          LOOKAHEAD_DAYS: ${{ vars.LOOKAHEAD_DAYS }}
+        run: python generate.py
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
