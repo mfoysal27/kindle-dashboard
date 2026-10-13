@@ -37,21 +37,22 @@ OUTPUT_SLUG = _env("OUTPUT_SLUG", "dashboard")
 
 # --- Localisation -----------------------------------------------------------
 # IANA timezone name. The runner is UTC, so this converts everything to your
-# local time. Examples: "America/Chicago", "Europe/London", "Asia/Dhaka".
+# local time. Rochester, MN is US Central time.
 TIMEZONE = _env("TIMEZONE", "America/Chicago")
 
 # Text shown as the place name on the weather panel (purely cosmetic).
-LOCATION_LABEL = _env("LOCATION_LABEL", "Home")
+LOCATION_LABEL = _env("LOCATION_LABEL", "Rochester, MN")
 
 # Units: "metric" -> Celsius, "imperial" -> Fahrenheit.
-UNITS = _env("UNITS", "metric")
+UNITS = _env("UNITS", "imperial")
 
 # --- Weather ----------------------------------------------------------------
 # Query the weather by city name (simplest) OR by coordinates (most precise).
 # If OWM_LAT and OWM_LON are both set, coordinates win; otherwise OWM_CITY is used.
-OWM_CITY = _env("OWM_CITY", "London,GB")
-OWM_LAT = _env("OWM_LAT", "")  # e.g. "51.5072"
-OWM_LON = _env("OWM_LON", "")  # e.g. "-0.1276"
+# Defaults below are Rochester, MN coordinates (avoids confusion with Rochester, NY).
+OWM_CITY = _env("OWM_CITY", "Rochester,MN,US")
+OWM_LAT = _env("OWM_LAT", "44.0121")   # Rochester, MN
+OWM_LON = _env("OWM_LON", "-92.4802")  # Rochester, MN
 
 # --- Calendar ---------------------------------------------------------------
 # How many upcoming events to show, and how far ahead to look (in days).
