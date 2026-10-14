@@ -14,17 +14,14 @@ permissions:
   pages: write
   id-token: write
 
-# Only one build/deploy at a time.
+# Only one deploy at a time. Do NOT cancel an in-progress deploy, or it fails.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
