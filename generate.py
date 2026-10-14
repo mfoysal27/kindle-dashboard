@@ -12,16 +12,33 @@ The image is written to <OUTPUT_DIR>/<OUTPUT_SLUG>.png (defaults: public/dashboa
 from __future__ import annotations
 
 import os
+import re
 import traceback
 
 import config
 from src import calendar_events, render, weather
 
 
+def _safe_slug(slug: str) -> str:
+    """
+    Turn the configured slug into a safe, flat filename (no path separators).
+
+    A slug containing '/' or '\\' would make img.save() target a non-existent
+    subfolder and crash. We strip any directory parts and drop characters that
+    aren't filename-friendly, then fall back to 'dashboard' if nothing is left.
+    """
+    base = os.path.basename(slug.strip().replace("\\", "/").rstrip("/"))
+    if base.lower().endswith(".png"):
+        base = base[:-4]
+    base = re.sub(r"[^A-Za-z0-9._-]", "", base)
+    return base or "dashboard"
+
+
 def _save(img, out_dir: str, slug: str) -> str:
     """Write the image as an 8-bit grayscale PNG and return its path."""
-    os.makedirs(out_dir, exist_ok=True)
-    out_path = os.path.join(out_dir, f"{slug}.png")
+    out_path = os.path.join(out_dir, f"{_safe_slug(slug)}.png")
+    # Create the real parent directory (belt-and-suspenders for any out_dir).
+    os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
     img.save(out_path, format="PNG", optimize=True)
     return out_path
 
