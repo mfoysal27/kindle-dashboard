@@ -179,3 +179,45 @@ def _truncate(draw, text, font, max_width) -> str:
     while text and draw.textlength(text + ell, font=font) > max_width:
         text = text[:-1]
     return text + ell
+
+
+def render_error(config, message: str) -> Image.Image:
+    """
+    Fallback image shown when normal rendering fails. It prints the error so the
+    problem is visible on the device/browser instead of a broken build.
+    """
+    img = Image.new("L", (config.WIDTH, config.HEIGHT), WHITE)
+    draw = ImageDraw.Draw(img)
+    margin = 60
+
+    draw.text((margin, 80), "Dashboard error", font=_font(70, bold=True), fill=BLACK)
+
+    # Word-wrap the message across the page width.
+    font = _font(36)
+    max_width = config.WIDTH - 2 * margin
+    y = 200
+    for line in _wrap(draw, message, font, max_width):
+        draw.text((margin, y), line, font=font, fill=BLACK)
+        y += 48
+        if y > config.HEIGHT - 80:
+            break
+    return img
+
+
+def _wrap(draw, text, font, max_width) -> list[str]:
+    """Greedy word-wrap that also breaks very long tokens."""
+    lines: list[str] = []
+    for raw_line in text.splitlines() or [text]:
+        words = raw_line.split(" ")
+        current = ""
+        for word in words:
+            trial = f"{current} {word}".strip()
+            if draw.textlength(trial, font=font) <= max_width:
+                current = trial
+            else:
+                if current:
+                    lines.append(current)
+                current = word
+        if current:
+            lines.append(current)
+    return lines

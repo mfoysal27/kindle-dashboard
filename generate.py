@@ -12,9 +12,18 @@ The image is written to <OUTPUT_DIR>/<OUTPUT_SLUG>.png (defaults: public/dashboa
 from __future__ import annotations
 
 import os
+import traceback
 
 import config
 from src import calendar_events, render, weather
+
+
+def _save(img, out_dir: str, slug: str) -> str:
+    """Write the image as an 8-bit grayscale PNG and return its path."""
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, f"{slug}.png")
+    img.save(out_path, format="PNG", optimize=True)
+    return out_path
 
 
 def main() -> None:
@@ -31,13 +40,23 @@ def main() -> None:
     print("Rendering image...")
     img = render.render(config, w, e)
 
-    # Step 3: save as an 8-bit grayscale PNG.
-    out_dir = config.OUTPUT_DIR
-    os.makedirs(out_dir, exist_ok=True)
-    out_path = os.path.join(out_dir, f"{config.OUTPUT_SLUG}.png")
-    img.save(out_path, format="PNG", optimize=True)
+    # Step 3: save it.
+    out_path = _save(img, config.OUTPUT_DIR, config.OUTPUT_SLUG)
     print(f"Saved {out_path} ({config.WIDTH}x{config.HEIGHT})")
 
 
 if __name__ == "__main__":
-    main()
+    # If anything unexpected goes wrong, publish a fallback image showing the
+    # error instead of failing the build. This keeps the Kindle fed with an
+    # image and makes the real error visible in the published PNG.
+    try:
+        main()
+    except Exception:  # noqa: BLE001
+        tb = traceback.format_exc()
+        print(tb)
+        try:
+            img = render.render_error(config, tb)
+            out_path = _save(img, config.OUTPUT_DIR, config.OUTPUT_SLUG)
+            print(f"Saved ERROR image to {out_path}")
+        except Exception:  # noqa: BLE001 - last resort, don't mask original
+            traceback.print_exc()
