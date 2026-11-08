@@ -8,7 +8,7 @@ Design goals for e-ink:
     hack and `eips` handle well.
 
 Layout, top to bottom:
-  1. Clock (big) + date + "updated" line.
+  1. Blank header. KOReader draws the device clock and date there.
   2. Weather panel: location, big temp, description, hi/lo, short forecast row.
   3. Events panel: upcoming calendar entries.
 """
@@ -16,7 +16,6 @@ Layout, top to bottom:
 from __future__ import annotations
 
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -69,21 +68,11 @@ def render(config, weather: dict, events: dict) -> Image.Image:
     """Build and return the finished PIL image."""
     img = Image.new("L", (config.WIDTH, config.HEIGHT), WHITE)
     draw = ImageDraw.Draw(img)
-    tz = ZoneInfo(config.TIMEZONE)
-    now = datetime.now(tz)
     margin = 60
 
-    # --- 1. Clock + date ----------------------------------------------------
-    y = 70
-    y = _center(draw, _fmt_time(now), _font(190, bold=True), y, config.WIDTH)
-    y += 30
-    y = _center(draw, now.strftime("%A"), _font(70), y, config.WIDTH)
-    y += 15
-    y = _center(draw, now.strftime("%B %d, %Y"), _font(55), y, config.WIDTH)
-    y += 20
-    _center(draw, f"updated {_fmt_time(now)}", _font(32), y, config.WIDTH)
-    y += 70
-
+    # The top band stays blank. KOReader draws the Kindle's own clock and date
+    # there when the device sleeps, so the time is not stuck at build time.
+    y = 540
     _rule(draw, margin, y, config.WIDTH - margin)
     y += 40
 
