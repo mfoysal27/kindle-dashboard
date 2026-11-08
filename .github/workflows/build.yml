@@ -1,9 +1,9 @@
 name: Build Kindle dashboard
 
-# Runs hourly, and lets you trigger it manually from the Actions tab.
+# Rebuilds every 15 minutes, and can be triggered from the Actions tab.
 on:
   schedule:
-    - cron: "0 * * * *"   # top of every hour (UTC)
+    - cron: "*/15 * * * *"
   workflow_dispatch:
   push:
     branches: [main]

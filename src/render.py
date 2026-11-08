@@ -8,14 +8,16 @@ Design goals for e-ink:
     hack and `eips` handle well.
 
 Layout, top to bottom:
-  1. Blank header. KOReader draws the device clock and date there.
+  1. Analog clock (hour and minute hands) and the date.
   2. Weather panel: location, big temp, description, hi/lo, short forecast row.
   3. Events panel: upcoming calendar entries.
 """
 
 from __future__ import annotations
 
+import math
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -64,15 +66,62 @@ def _center(draw, text, font, y, width):
     return y + h
 
 
+def _hand(draw, cx, cy, radius, fraction, length, width):
+    """Draw one clock hand. fraction is 0 at 12 o'clock and 1 at the next 12."""
+    angle = math.radians(fraction * 360 - 90)
+    draw.line(
+        [
+            (cx, cy),
+            (cx + radius * length * math.cos(angle), cy + radius * length * math.sin(angle)),
+        ],
+        fill=BLACK,
+        width=width,
+    )
+
+
+def _analog_clock(draw, cx, cy, radius, when: datetime):
+    """Hour and minute hands only. No second hand, so a 15-minute refresh looks right."""
+    draw.ellipse(
+        (cx - radius, cy - radius, cx + radius, cy + radius),
+        outline=BLACK,
+        width=4,
+    )
+    for mark in range(12):
+        angle = math.radians(mark * 30 - 90)
+        inner = radius - (28 if mark % 3 == 0 else 16)
+        outer = radius - 8
+        draw.line(
+            [
+                (cx + inner * math.cos(angle), cy + inner * math.sin(angle)),
+                (cx + outer * math.cos(angle), cy + outer * math.sin(angle)),
+            ],
+            fill=BLACK,
+            width=6 if mark % 3 == 0 else 3,
+        )
+    minute = when.minute + when.second / 60.0
+    hour = (when.hour % 12) + minute / 60.0
+    _hand(draw, cx, cy, radius, hour / 12.0, 0.52, 12)
+    _hand(draw, cx, cy, radius, minute / 60.0, 0.78, 6)
+    draw.ellipse((cx - 10, cy - 10, cx + 10, cy + 10), fill=BLACK)
+
+
 def render(config, weather: dict, events: dict) -> Image.Image:
     """Build and return the finished PIL image."""
     img = Image.new("L", (config.WIDTH, config.HEIGHT), WHITE)
     draw = ImageDraw.Draw(img)
     margin = 60
+    now = datetime.now(ZoneInfo(config.TIMEZONE))
 
-    # The top band stays blank. KOReader draws the Kindle's own clock and date
-    # there when the device sleeps, so the time is not stuck at build time.
-    y = 540
+    # --- 1. Analog clock + date --------------------------------------------
+    _analog_clock(draw, config.WIDTH // 2, 230, 155, now)
+    _center(
+        draw,
+        now.strftime("%A, %B ") + str(now.day),
+        _font(42),
+        410,
+        config.WIDTH,
+    )
+    y = 500
     _rule(draw, margin, y, config.WIDTH - margin)
     y += 40
 
